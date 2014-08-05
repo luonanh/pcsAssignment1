@@ -19,10 +19,10 @@ package org.magnum.dataup;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.magnum.dataup.model.Video;
 import org.magnum.dataup.model.VideoStatus;
@@ -32,6 +32,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import retrofit.client.Response;
 import retrofit.mime.TypedFile;
@@ -69,6 +71,7 @@ public class VideoController {
 		Video video = Video.create().withContentType(v.getContentType())
 				.withDuration(v.getDuration()).withSubject(v.getSubject())
 				.withTitle(v.getTitle()).build();
+		
 		return save(video);
 	}	
 	
@@ -86,6 +89,7 @@ public class VideoController {
 	
   	public Video save(Video entity) {
 		checkAndSetId(entity);
+		entity.setDataUrl(getDataUrl(entity.getId()));
 		videos.put(entity.getId(), entity);
 		return entity;
 	}
@@ -94,6 +98,20 @@ public class VideoController {
 		if(entity.getId() == 0){
 			entity.setId(currentId.incrementAndGet());
 		}
+	}
+
+    private String getDataUrl(long videoId){
+        String url = getUrlBaseForLocalServer() + "/video/" + videoId + "/data";
+        return url;
+    }
+
+ 	private String getUrlBaseForLocalServer() {
+	   HttpServletRequest request = 
+	       ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+	   String base = 
+	      "http://"+request.getServerName() 
+	      + ((request.getServerPort() != 80) ? ":"+request.getServerPort() : "");
+	   return base;
 	}
 
 }
